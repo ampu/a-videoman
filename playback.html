@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VideoMan</title>
+  <style>
+    .video__state {
+      display: flex;
+      gap: 40px;
+      justify-content: flex-start;
+      align-items: baseline;
+    }
+  </style>
+</head>
+<body>
+
+<section class="video">
+  <div class="video__state">
+    <h1>Video Man</h1>
+    <p class="video__time">
+      <span class="video__current-time">0:00.000</span> / <span class="video__duration">0:00.000</span>
+    </p>
+  </div>
+
+  <video
+    class="video__player"
+    src="./sample.mp4"
+    preload="auto"
+  ></video>
+
+  <div class="video__controls"></div>
+</section>
+
+<script>
+  const MILLISECONDS_IN_SECOND = 1e3;
+  const SECONDS_IN_MINUTE = 6e1;
+  const SECONDS_IN_HOUR = 36e2;
+
+  const KeyCode = {
+    ENTER: 13,
+    SPACE: 32,
+    ARROW_LEFT: 37,
+    ARROW_RIGHT: 39,
+  };
+
+  const TimeTick = {
+    DEFAULT: 33.3,
+    ALT: 10,
+    SHIFT: 1e3,
+  };
+
+  const Bookmark = {
+    KEYHOLE: 1.4,
+    DOG_SCENE: 15.1,
+    DOG_3D: 15.8,
+    BUBBLES: 23.8, /// 22.0+0.5
+    LEAVES_3D: 21.9,
+    LEAVES_3D_2: 23.7,
+    COMPASS_3D: 26.6,
+    SONYA_3D: 30.9,
+    RULES: 43,
+    SONYA_IN: 47.8,
+    SONYA_OUT: 53.5,
+    ALLIGATOR: 53.7,
+    SONYA_OUT1: 59.2,
+    SONYA_OUT2: 71.6,
+    SEA_CALF: 72.3,
+    FLAMINGO: 78.6,
+  };
+
+  Bookmark.CURRENT = Bookmark.LEAVES_3D_2;
+
+  const videoPlayer = document.querySelector(`.video__player`);
+  const videoControls = document.querySelector(`.video__controls`);
+
+  const title = document.querySelector(`h1`);
+  const currentTime = document.querySelector(`.video__current-time`);
+  const duration = document.querySelector(`.video__duration`);
+
+  const state = {
+    isPlaying: false,
+  };
+
+  const doTimeTick = (tick) => {
+    tick /= MILLISECONDS_IN_SECOND;
+    videoPlayer.currentTime = String(Number(videoPlayer.currentTime) + tick);
+  };
+
+  const formatTime = (totalSeconds) => {
+    const hours = ~~(totalSeconds / SECONDS_IN_HOUR);
+    const minutes = ~~(totalSeconds / SECONDS_IN_MINUTE);
+    const seconds = totalSeconds % SECONDS_IN_MINUTE;
+    return hours === 0
+            ? `${minutes}:${seconds.toFixed(3).padStart(6, `0`)}`
+            : `${hours}:${String(minutes).padStart(2, `0`)}:${seconds.toFixed(3).padStart(6, `0`)}`;
+  };
+
+  const getTick = ({shiftKey, altKey}) => {
+    if (shiftKey) {
+      return TimeTick.SHIFT;
+    }
+    if (altKey) {
+      return TimeTick.ALT;
+    }
+    return TimeTick.DEFAULT;
+  };
+
+  const getFileName = () => {
+    return decodeURIComponent(videoPlayer.src.replace(window.location.href.replace(/[^/]*$/, ``), ``));
+  };
+
+  document.addEventListener(`keydown`, (evt) => {
+    if (evt.keyCode === KeyCode.ENTER) {
+      evt.preventDefault();
+      videoPlayer.currentTime = String(Bookmark.CURRENT);
+      return;
+    }
+
+    if (evt.keyCode === KeyCode.SPACE) {
+      evt.preventDefault();
+      if (state.isPlaying) {
+        videoPlayer.pause();
+      } else {
+        videoPlayer.play();
+      }
+      return;
+    }
+
+    if (evt.keyCode === KeyCode.ARROW_LEFT) {
+      evt.preventDefault();
+      doTimeTick(-getTick(evt));
+      return;
+    }
+
+    if (evt.keyCode === KeyCode.ARROW_RIGHT) {
+      evt.preventDefault();
+      doTimeTick(getTick(evt));
+      return;
+    }
+  });
+
+  videoPlayer.addEventListener(`timeupdate`, (evt) => {
+    currentTime.textContent = formatTime(videoPlayer.currentTime);
+  });
+
+  videoPlayer.addEventListener(`durationchange`, (evt) => {
+    duration.textContent = formatTime(videoPlayer.duration);
+    title.textContent = getFileName();
+  });
+
+  videoPlayer.addEventListener(`play`, () => {
+    state.isPlaying = true;
+  });
+
+  videoPlayer.addEventListener(`pause`, () => {
+    state.isPlaying = false;
+  });
+
+  videoPlayer.addEventListener(`ended`, () => {
+    state.isPlaying = false;
+  });
+</script>
+</body>
+</html>

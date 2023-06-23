@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Camera Sandbox</title>
+
+  <style>
+    html {
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    *, *::before, *::after {
+      box-sizing: inherit;
+    }
+
+    body {
+      margin: 0;
+      height: 100%;
+      display: flex;
+      flex-flow: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    video {
+      width: 640px;
+      height: 480px;
+    }
+
+    img {
+      width: 640px;
+      height: 480px;
+    }
+
+    .camera {
+      width: 640px;
+    }
+
+    .output {
+      width: 640px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="camera">
+  <video>Video is not supported</video>
+  <button onclick="takePhoto()">Take photo</button>
+  <button onclick="clearPhoto()">Clear photo</button>
+  <button onclick="stopRecording()">Stop streaming</button>
+</div>
+
+<div class="output">
+  <canvas  hidden></canvas>
+  <img alt="Photo">
+</div>
+
+
+<script>{
+  const video = document.querySelector(`video`)
+  const canvas = document.querySelector(`canvas`)
+  const img = document.querySelector(`img`)
+
+  const width = 640
+  let height = 0
+  let streaming = false
+
+  function stopRecording() {
+    video.srcObject.getTracks().forEach((track) => {
+      track.stop()
+    })
+  }
+
+  function takePhoto() {
+    const context = canvas.getContext(`2d`)
+    canvas.width = width
+    canvas.height = height
+    context.drawImage(video, 0, 0, width, height)
+
+    img.setAttribute(`src`, canvas.toDataURL(`image/png`))
+  }
+
+  function clearPhoto() {
+    const context = canvas.getContext(`2d`)
+    context.fillStyle = `#eeeeee`
+    context.fillRect(0, 0, canvas.width, canvas.height)
+
+    img.setAttribute(`src`, canvas.toDataURL(`image/png`))
+  }
+
+  const onVideoCanPlay = () => {
+    if (streaming) {
+      return
+    }
+    height = video.videoHeight / (video.videoWidth / width) || width / (4 / 3)
+
+    video.setAttribute(`width`, width)
+    video.setAttribute(`height`, height)
+    canvas.setAttribute(`width`, width)
+    canvas.setAttribute(`height`, height)
+    streaming = true
+  }
+
+  const bootstrap = async () => {
+    video.addEventListener(`canplay`, onVideoCanPlay)
+    video.srcObject = await navigator.mediaDevices.getUserMedia({video: true, audio: false})
+    video.play()
+  }
+
+  bootstrap()
+  clearPhoto()
+}</script>
+
+</body>
+</html>
